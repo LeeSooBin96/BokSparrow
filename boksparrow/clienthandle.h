@@ -14,11 +14,12 @@ class ClientHandle
     //디폴트(private) 멤버
     static const unsigned int BUF_SIZE=1024;
 
-    std::string nickName; //닉네임을 저장할 문자열
     unsigned int friendNum=0; //친구 수 저장
     unsigned int posforF=0; //친구창 커서 위치
 
 public:
+    std::string nickName; //닉네임을 저장할 문자열
+    
     //수신 오류 --서버의 종료
     void ReceiveError(void) {std::cout<<"서버 종료 \n"; exit(1);};
     //서버 접속(로그인) 프로세스

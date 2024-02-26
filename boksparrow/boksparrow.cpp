@@ -1,11 +1,12 @@
 //복스패로우 클라이언트
 #include <conio.h>
-#include <string>
-#include <vector>
 #include <process.h>
+#include <vector>
+#include <string>
 
 #include "clientbase.h"
 #include "clienthandle.h"
+#include "chathandle.h"
 
 const char* SERVER_IP="127.0.0.1";
 const char* PORT_NUM="91016";
@@ -19,6 +20,8 @@ std::vector<std::string> split(std::string,const char);
 unsigned WINAPI ReceiveMSG(void* arg);
 //클라이언트 메인 진행 클래스
 ClientHandle hClient;
+//클라이언트 채팅 진행 클래스
+ChatHandle hChat;
 
 int main()
 {
@@ -106,9 +109,17 @@ unsigned WINAPI ReceiveMSG(void* arg)
         else if(msg=="enter")
         {
             //채팅방 입장) 메시지 총길이:enter:채팅코드:상대닉네임(1:1)
-            std::cout<<bufString<<std::endl;
-            Sleep(2000);
-            //채팅방 입장하면 이 스레드는 종료되어야함
+            //채팅방 입장하면 이 스레드는 종료되어야함 --안해도됨!!!
+            //채팅 초기 세팅
+            hChat.SettingChat(hClient.nickName,split(bufString,':'));
+
+            HANDLE hCthread[2];
+            hCthread[0]=(HANDLE)_beginthreadex(NULL,0,hChat.InputChat,(void*)&clnt.sock,0,NULL);
+            hCthread[1]=(HANDLE)_beginthreadex(NULL,0,hChat.OuputChat,(void*)&clnt.sock,0,NULL);
+            WaitForMultipleObjects(2,hCthread,TRUE,INFINITE);
+            //wait걸면 해당 스레드 종료 이전까지는 그 뒤로 안넘어간다!
+            //즉 여기서 멈춰있을 수 있는것 >.<
+            Sleep(2000); //임시
         }
 
         memset(buffer,0,BUF_SIZE); //버퍼 초기화
