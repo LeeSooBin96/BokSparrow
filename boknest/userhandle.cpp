@@ -178,3 +178,17 @@ void UserHandle::sendWhisper(SOCKET& sock,std::vector<std::string> mlist)
         }
     }
 }
+//친구 닉네임 가져오기
+std::string UserHandle::BringMyFriend(std::string myNick,int index)
+{
+    std::string friendNick;
+    for(auto mem:userList)
+    {
+        if(mem.nick==myNick)
+        {
+            friendNick=mem.friendList[index];
+            break;
+        }
+    }
+    return friendNick;
+}

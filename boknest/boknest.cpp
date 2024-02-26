@@ -85,6 +85,17 @@ unsigned WINAPI HandlingClient(void* arg)
             //귓속말 보내기
             hUser.sendWhisper(clntSock,split(bufString,':'));
         }
+        else if(msg=="Enter")
+        {
+            //채팅방 입장
+            //수신 메시지)메시지총길이:Enter:OtO:내 닉네임:친구 인덱스
+            if(split(bufString,':')[2]=="OtO")
+            {
+                //채팅방 입장 --채팅방 코드 송신해야함
+                hChat.EnterOtOchatRoom(clntSock,{split(bufString,':')[3],hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[4].c_str()))});
+            }
+            
+        }
 
         memset(buffer,0,BUF_SIZE); //버퍼 초기화
     }

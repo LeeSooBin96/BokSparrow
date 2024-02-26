@@ -33,6 +33,7 @@ int main()
     //친구 목록 창
     hClient.ProcessFriendScreen(clnt);
     
+    
     //스레드 종료하면 메인 종료되어야함
     WaitForSingleObject(hRecvThread,INFINITE);
     return 0;
@@ -56,7 +57,7 @@ unsigned WINAPI ReceiveMSG(void* arg)
     std::string bufString;
     int recvLen, strLen; //수신메시지 길이, 문자열 길이
 
-    while(recv(clnt.sock,buffer,BUF_SIZE,0)>0)
+    while(recvLen=recv(clnt.sock,buffer,BUF_SIZE,0)>0)
     {
         //메시지길이+메시지내용 전달 받음
         bufString=buffer;
@@ -96,14 +97,22 @@ unsigned WINAPI ReceiveMSG(void* arg)
         }
         else if(msg=="whisper")
         {
+            //귓속말 수신
             std::cout<<"==================================================\n";
             std::cout<<split(bufString,':')[2]<<"님으로부터: "<<split(bufString,':')[3]<<std::endl;
             std::cout<<"==================================================\n";
             Sleep(1000);
         }
+        else if(msg=="enter")
+        {
+            //채팅방 입장) 메시지 총길이:enter:채팅코드:상대닉네임(1:1)
+            std::cout<<bufString<<std::endl;
+            Sleep(2000);
+            //채팅방 입장하면 이 스레드는 종료되어야함
+        }
 
         memset(buffer,0,BUF_SIZE); //버퍼 초기화
     }
-    //수신 오류 나면 스레드 종료될것 이기에
-    hClient.ReceiveError();
+    //수신 오류
+    if(recvLen<0) hClient.ReceiveError();
 }

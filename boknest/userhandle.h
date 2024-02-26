@@ -32,6 +32,8 @@ public:
     void FindFriend(SOCKET&,std::string);
     //귓속말 보내기
     void sendWhisper(SOCKET&,std::vector<std::string>);
+    //친구 닉네임 가져오기
+    std::string BringMyFriend(std::string,int);
 };
 
 #endif

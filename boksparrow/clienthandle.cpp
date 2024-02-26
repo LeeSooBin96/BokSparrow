@@ -257,7 +257,12 @@ void ClientHandle::ConnectMyFriend(SOCKET& sock)
             //있는 방이면 기존 방에 없는방이면 새로 생성한 방으로
             //그렇담 보낼 메시지는
             //메시지총길이:Enter:OtO:내닉네임:친구인덱스
-            std::cout<<"대충 여기가 채팅방인가... \n";
+            char buf[BUF_SIZE]; //길이 문자열로 바꿀 버퍼
+            itoa(posforF,buf,10);
+            std::string msg=":Enter:OtO:"+nickName+":"+buf;
+            itoa(msg.size(),buf,10);
+            msg=buf+msg;
+            send(sock,msg.c_str(),msg.size(),0);
         }
             quit=true; //위에는 없앴는데 예는 있어야할듯
             break;
