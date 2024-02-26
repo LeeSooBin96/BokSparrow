@@ -4,6 +4,7 @@
 
 #include "serverbase.h"
 #include "userhandle.h"
+#include "chatroom.h"
 
 const char* PORT_NUM="91016";
 const unsigned int BUF_SIZE=1024;
@@ -13,6 +14,8 @@ unsigned WINAPI HandlingClient(void* arg);
 std::vector<std::string> split(std::string,const char);
 //유저 관련 정보 처리 클래스
 UserHandle hUser; 
+//채팅 관련 처리 클래스
+ChatRoom hChat;
 
 
 int main()
