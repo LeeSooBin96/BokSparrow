@@ -32,6 +32,8 @@ void PrintFriendList(std::vector<std::string>);
 void AddorFindMyFriend(std::string);
 //친구 찾기
 void PrintFoundFriend(std::vector<std::string>);
+//친구 연결 --posforF로 친구 인덱스 읽을 수 있음
+void ConnectMyFriend();
 
 int main()
 {
@@ -67,7 +69,7 @@ int main()
                 break;
             case 80: 
             case 115:
-                if(posforF!=1+friendNum)
+                if(posforF!=3+friendNum)
                 {
                     posforF++;
                     RequestFriendList();
@@ -82,8 +84,8 @@ int main()
         }
         if(posforF<friendNum)
         {
-            //친구 선택한것
-            std::cout<<"아마 친구를 선택하지 않았을까? \n";
+            //친구 선택한것 --1:1 채팅방
+            ConnectMyFriend();
         }
         else if(posforF==friendNum)
         {
@@ -95,7 +97,18 @@ int main()
             //친구 추가 
             AddorFindMyFriend("Add");
         }
-        Sleep(2000); //임시
+        else if(posforF==friendNum+2)
+        {
+            //채팅방 입장 --1:N 채팅방
+        }
+        else if(posforF==friendNum+3)
+        {
+            //종료
+            std::cout<<"종료됩니다. \n";
+            clnt.~ClientBase();
+            break;
+        }
+        // Sleep(2000); //임시
     }
     
     //스레드 종료하면 메인 종료되어야함
@@ -159,6 +172,13 @@ unsigned WINAPI ReceiveMSG(void* arg)
             //친구 찾기 결과
             PrintFoundFriend(split(bufString,':'));
         }
+        else if(msg=="whisper")
+        {
+            std::cout<<"==================================================\n";
+            std::cout<<split(bufString,':')[2]<<"님으로부터: "<<split(bufString,':')[3]<<std::endl;
+            std::cout<<"==================================================\n";
+            Sleep(1000);
+        }
 
         memset(buffer,0,BUF_SIZE); //버퍼 초기화
     }
@@ -175,7 +195,7 @@ bool LoginProcess()
                 "닉네임을 입력해주세요 (20자이하)>";
     
     std::getline(std::cin,nickName);
-    while(nickName.size()>20)
+    while(nickName.size()>20||nickName.size()==0)
     {
         std::cout<<"==================================================\n"
                 "다시 입력해주세요 (20자이하)>";
@@ -270,8 +290,12 @@ void PrintFriendList(std::vector<std::string> flist)
     else std::cout<<"친구 찾기 > \n";
     if(posforF==1+friendNum) std::cout<<"\x1b[33m친구 추가 > \x1b[m\n";
     else std::cout<<"친구 추가 > \n";
+    if(posforF==2+friendNum) std::cout<<"\x1b[33m채팅방 입장 > \x1b[m\n";
+    else std::cout<<"채팅방 입장 > \n";
+    if(posforF==3+friendNum) std::cout<<"\x1b[33m종료 > \x1b[m\n";
+    else std::cout<<"종료 > \n";
 }
-//친구 추가
+//친구 추가 또는 찾기
 void AddorFindMyFriend(std::string AorF)
 { //--닉네임 입력-서버 송신-수신-친구 목록 업데이트
     //버퍼로 사용할 문자열
@@ -279,6 +303,7 @@ void AddorFindMyFriend(std::string AorF)
     std::string msg;
 
     std::string friendNick;
+    std::cout<<"==================================================\n";
     std::cout<<"친구의 닉네임을 입력하세요 >";
     std::getline(std::cin,friendNick);
     while(friendNick==nickName) //본인 닉네임 입력했을경우...이런것까지 생각해야해?
@@ -313,4 +338,47 @@ void PrintFoundFriend(std::vector<std::string> flist)
         }
     }
     
+}
+//친구 연결 --posforF로 친구 인덱스 읽을 수 있음
+void ConnectMyFriend()
+{
+    //선택한 시점의 posforF가 친구 리스트 인덱스 넘버
+    //귓속말 혹은 채팅방 입장 선택하게 해야함
+    std::cout<<"==================================================\n";
+    std::cout<<"귓속말 보내기(W) 1:1 채팅방 생성(C) 이전으로(X)>\n";
+    bool quit=false;
+    int input;
+    while(!quit)
+    {
+        input=getch();
+        switch (input)
+        {
+        case 119: //귓속말 보내기
+        {
+            std::cout<<"보낼 메시지 >";
+            std::string msg;
+            std::getline(std::cin,msg);
+            //입력받은 메시지 서버에 전송해야한다.
+            //보낼 내용) 메시지 전체 길이:Whisper:내 닉네임:친구 인덱스:메시지
+            char buf[BUF_SIZE]; //길이 문자열로 바꿀 버퍼
+            itoa(posforF,buf,10);
+            msg=":Whisper:"+nickName+":"+buf+":"+msg;
+            itoa(msg.size(),buf,10);
+            msg=buf+msg;
+            send(clnt.sock,msg.c_str(),msg.size(),0);
+        }
+            quit=true;
+            break;
+        case 99: //1:1 채팅방 생성
+            std::cout<<"채팅방을 생성한다 \n";
+            quit=true;
+            break;
+        case 120: //이전으로
+            quit=true;
+            break;
+        default:
+            break;
+        }
+    }
+    //119 ,99 ,120
 }
