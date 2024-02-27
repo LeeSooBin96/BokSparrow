@@ -192,3 +192,60 @@ std::string UserHandle::BringMyFriend(std::string myNick,int index)
     }
     return friendNick;
 }
+//채팅 멤버 상태 변경 전송(멤버리스트,상태변경한닉네임)
+void UserHandle::SendEnterMem(std::vector<std::string> mlist,std::string nick)
+{
+    char buffer[BUF_SIZE]={0};
+    std::string msg=":enterM:"+nick;
+    itoa(msg.size(),buffer,10);
+    msg=buffer+msg;
+
+    for(auto mem: mlist)
+    {
+        for(auto user: userList)
+        {
+            if(user.nick!=nick&&user.nick==mem) //상태 변경한 유저 제외한 멤버들에게 전송
+            {
+                send(user.sock,msg.c_str(),msg.size(),0);
+            }
+        }
+    }
+}
+//채팅 멤버에게 공지 메시지 보내기
+void UserHandle::SendNoticMSG(std::vector<std::string> mlist,std::string msg)
+{
+    char buffer[BUF_SIZE]={0};
+    std::string notic=":notic:"+msg+":";
+    itoa(notic.size(),buffer,10);
+    notic=buffer+notic;
+
+    for(auto mem: mlist)
+    {
+        for(auto user: userList)
+        {
+            if(user.nick==mem)
+            {
+                send(user.sock,notic.c_str(),notic.size(),0);
+            }
+        }
+    }
+}
+//채팅 메시지 보내기
+void UserHandle::SendChatMSG(std::vector<std::string> mlist,std::string nick,std::string msg)
+{ 
+    std::string chat;
+    char buffer[BUF_SIZE]={0};
+    chat=":chat:"+nick+":"+msg;
+    itoa(chat.size(),buffer,10);
+    chat=buffer+chat;
+    for(auto mem: mlist)
+    {
+        for(auto user: userList)
+        {
+            if(user.nick==mem)
+            {
+                send(user.sock,chat.c_str(),chat.size(),0);
+            }
+        }
+    }
+}

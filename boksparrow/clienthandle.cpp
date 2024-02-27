@@ -111,7 +111,7 @@ void ClientHandle::PrintFriendList(std::vector<std::string> flist)
     else std::cout<<"종료 > \n";
 }
 //친구 창 프로세스
-void ClientHandle::ProcessFriendScreen(ClientBase& clnt)
+bool ClientHandle::ProcessFriendScreen(ClientBase& clnt)
 {
     //친구 목록 창 메뉴 선택
     while(true)
@@ -150,7 +150,8 @@ void ClientHandle::ProcessFriendScreen(ClientBase& clnt)
         if(posforF<friendNum)
         {
             //친구 선택한것 --1:1 채팅방
-            ConnectMyFriend(clnt.sock);
+            if(ConnectMyFriend(clnt.sock)) return true; //채팅 고르면 나오게
+            //여기서 대기 되게 하거나
         }
         else if(posforF==friendNum)
         {
@@ -165,6 +166,9 @@ void ClientHandle::ProcessFriendScreen(ClientBase& clnt)
         else if(posforF==friendNum+2)
         {
             //채팅방 입장 --1:N 채팅방
+            //서버에 채팅방 목록 정보 요청
+            //보낼메시지) 메시지총길이:Clist:닉네임 --> 서버) 메시지총길이:clist:채팅방개수:채팅방이름:채팅코드...
+            
         }
         else if(posforF==friendNum+3)
         {
@@ -174,6 +178,7 @@ void ClientHandle::ProcessFriendScreen(ClientBase& clnt)
             break;
         }
     }
+    return false;
 }
 //친구 추가 또는 찾기
 void ClientHandle::AddorFindMyFriend(SOCKET& sock,std::string AorF)
@@ -220,7 +225,7 @@ void ClientHandle::PrintFoundFriend(std::vector<std::string> flist)
     Sleep(1000);
 }
 //친구 연결 --posforF로 친구 인덱스 읽을 수 있음
-void ClientHandle::ConnectMyFriend(SOCKET& sock)
+bool ClientHandle::ConnectMyFriend(SOCKET& sock)
 {
     //선택한 시점의 posforF가 친구 리스트 인덱스 넘버
     //귓속말 혹은 채팅방 입장 선택하게 해야함
@@ -263,6 +268,8 @@ void ClientHandle::ConnectMyFriend(SOCKET& sock)
             itoa(msg.size(),buf,10);
             msg=buf+msg;
             send(sock,msg.c_str(),msg.size(),0);
+            //여기서 대기 되게 하거나
+            return true;
         }
             quit=true; //위에는 없앴는데 예는 있어야할듯
             break;
@@ -273,5 +280,6 @@ void ClientHandle::ConnectMyFriend(SOCKET& sock)
             break;
         }
     }
+    return false;
     //119 ,99 ,120
 }

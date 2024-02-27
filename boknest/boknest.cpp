@@ -88,13 +88,59 @@ unsigned WINAPI HandlingClient(void* arg)
         else if(msg=="Enter")
         {
             //채팅방 입장
-            //수신 메시지)메시지총길이:Enter:OtO:내 닉네임:친구 인덱스
-            if(split(bufString,':')[2]=="OtO")
+            std::vector<std::string> mlist; //멤버 리스트 저장할 벡터
+            mlist.push_back(split(bufString,':')[3]);
+            if(split(bufString,':')[2]=="OtO") //1:1 채팅방
             {
+            //수신 메시지)메시지총길이:Enter:OtO:내 닉네임:친구 인덱스
                 //채팅방 입장 --채팅방 코드 송신해야함
-                hChat.EnterOtOchatRoom(clntSock,{split(bufString,':')[3],hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[4].c_str()))});
+                mlist.push_back(hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[4].c_str())));
+                // hChat.EnterOtOchatRoom(clntSock,{split(bufString,':')[3],hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[4].c_str()))});
             }
-            
+            else if(split(bufString,':')[2]=="OtM") //멀티 채팅방
+            {
+            //수신 메시지)메시지총길이:Enter:OtO:내 닉네임:친구닉네임1:친구닉네임2...
+                //1:N 일때는 닉네임 전달받아서 방입장하게하자
+                for(int i=4;i<split(bufString,':').size();i++)
+                {
+                    mlist.push_back(split(bufString,':')[i]);
+                }
+            }
+            hChat.EnterChatRoom(clntSock,mlist);
+            std::string notic=split(bufString,':')[3]+"님이 입장하셨습니다. \n";
+            //그러면 이시점에서 채팅방의 다른 멤버들에게 나 입장한다는 메시지 보내줘야함
+            hUser.SendNoticMSG(mlist,notic);
+        }
+        else if(msg=="Chat")
+        {
+            //채팅 관련 처리는 모두 여기서 하자
+            std::string sep=split(bufString,':')[2];
+            if(sep=="Connect")
+            {
+                //채팅방 멤버 접속상태 요청
+                hChat.SendMemConnect(clntSock,split(bufString,':')[3],split(bufString,':')[4]);
+                //이때 채팅방 멤버들한테 접속했음을 알려야함...
+                //멤버들에게 접속한사람 닉네임을 알려주자 --성공
+                hUser.SendEnterMem(hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4]);
+            }
+            else if(sep=="Send")
+            {
+                //채팅 메시지 수신
+                //하려면 해당 채팅방 멤버 리스트를 가져와서
+                //멤버에 해당하는 소켓에 메시지 보내야함
+                hUser.SendChatMSG(hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4],split(bufString,':')[5]);
+            }
+            else if(sep=="Quit")
+            {
+                //채팅방 퇴장
+                std::string notic=split(bufString,':')[4]+"님이 퇴장하셨습니다. \n:Q:"+split(bufString,':')[4];
+                hUser.SendNoticMSG(hChat.BringMemList(split(bufString,':')[3]),notic);
+                //접속 상태 변경
+                hChat.QuitChatRoom(split(bufString,':')[3],split(bufString,':')[4]);
+                
+                //채팅 수신 스레드 종료 시켜야함
+                send(clntSock,"5:quit",6,0);
+            }
         }
 
         memset(buffer,0,BUF_SIZE); //버퍼 초기화

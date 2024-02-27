@@ -27,7 +27,7 @@ public:
     //친구 정보 요청
     void RequestFriendList(SOCKET&);
     //친구 창 프로세스
-    void ProcessFriendScreen(ClientBase&);
+    bool ProcessFriendScreen(ClientBase&);
     //친구 목록 출력
     void PrintFriendList(std::vector<std::string>);
     //친구 추가
@@ -35,6 +35,6 @@ public:
     //친구 찾기
     void PrintFoundFriend(std::vector<std::string>);
     //친구 연결 --posforF로 친구 인덱스 읽을 수 있음
-    void ConnectMyFriend(SOCKET&);
+    bool ConnectMyFriend(SOCKET&);
 };
 #endif
