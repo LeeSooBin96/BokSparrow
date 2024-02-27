@@ -127,6 +127,7 @@ unsigned WINAPI ReceiveMSG(void* arg)
         {
             //서버에서) 메시지총길이:clist:채팅방개수:채팅방이름:채팅방코드...
             std::cout<<bufString<<std::endl;
+            //채팅방 목록 선택화면으로 가자~
         }
         else if(msg=="enter")
         {
