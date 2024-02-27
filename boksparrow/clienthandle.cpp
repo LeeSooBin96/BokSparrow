@@ -88,7 +88,20 @@ void ClientHandle::PrintFriendList(std::vector<std::string> flist)
         friendNum=atoi(flist[2].c_str()); //친구 수 저장
         for(int i=0;i<friendNum*2;i+=2)
         {
-            if(posforF==i/2) std::cout<<"\x1b[33m"+flist[3+i]+"\x1b[m\t";
+            bool ck=false;
+            if(Cflist.size()!=0)
+            {
+                for(int index: Cflist)
+                {
+                    if(index==i/2)
+                    {
+                        ck=true;
+                        break;
+                    }
+                }
+            }
+            if(ck) std::cout<<"\x1b[34m"+flist[3+i]+"\x1b[m\t";
+            else if(posforF==i/2) std::cout<<"\x1b[33m"+flist[3+i]+"\x1b[m\t";
             else std::cout<<flist[3+i]+"\t";
             if(flist[4+i]=="F")
             {
@@ -109,6 +122,7 @@ void ClientHandle::PrintFriendList(std::vector<std::string> flist)
     else std::cout<<"채팅방 입장 > \n";
     if(posforF==3+friendNum) std::cout<<"\x1b[33m종료 > \x1b[m\n";
     else std::cout<<"종료 > \n";
+    if(chooseFriend) std::cout<<"\x1b[34m함께할 친구를 선택하세요 (선택종료는 x)>\x1b[m";
 }
 //친구 창 프로세스
 bool ClientHandle::ProcessFriendScreen(ClientBase& clnt)
@@ -165,16 +179,18 @@ bool ClientHandle::ProcessFriendScreen(ClientBase& clnt)
         }
         else if(posforF==friendNum+2)
         {
-            //채팅방 입장 --1:N 채팅방
-            //서버에 채팅방 목록 정보 요청
-            //보낼메시지) 메시지총길이:Clist:닉네임 --> 서버) 메시지총길이:clist:채팅방개수:채팅방이름:채팅코드...
-            std::string msg=":Clist:"+nickName;
-            char buf[BUF_SIZE]={0};
-            itoa(msg.size(),buf,10);
-            msg=buf+msg;
-            send(clnt.sock,msg.c_str(),msg.size(),0);
-            //얘도 여기서 대기 시킬게 필요할듯
-            std::cin.get();
+            // //채팅방 입장 --1:N 채팅방
+            if(EnterChatRoom(clnt.sock)) return true;
+            // //서버에 채팅방 목록 정보 요청
+            // //보낼메시지) 메시지총길이:Clist:닉네임 --> 서버) 메시지총길이:clist:채팅방개수:채팅방이름:채팅코드...
+            // std::string msg=":Clist:"+nickName;
+            // char buf[BUF_SIZE]={0};
+            // itoa(msg.size(),buf,10);
+            // msg=buf+msg;
+            // send(clnt.sock,msg.c_str(),msg.size(),0);
+            // //얘도 여기서 대기 시킬게 필요할듯
+            // //그냥 나가게 하자
+            // return true;
         }
         else if(posforF==friendNum+3)
         {
@@ -288,4 +304,85 @@ bool ClientHandle::ConnectMyFriend(SOCKET& sock)
     }
     return false;
     //119 ,99 ,120
+}
+//채팅방 입장
+bool ClientHandle::EnterChatRoom(SOCKET& sock)
+{
+    chooseFriend=true;
+    Cflist.clear();
+    // std::vector<int> flist;
+    // std::cout<<"()"
+    // while(true)
+    // {
+    //     std::string friendNick;
+    //     std::cout<<"함께할 친구의 닉네임을 입력하세요 >";
+    //     std::getline(std::cin,friendNick);
+    // }
+    if(friendNum==0) return false;
+    posforF=0;
+    while(true)
+    {
+        int input;
+        bool quit=false;
+        RequestFriendList(sock);
+        while(!quit)
+        {
+            input=getch();
+            switch (input)
+            {
+            case 72:  
+            case 119:
+                if(posforF!=0) 
+                {
+                    posforF--;
+                    RequestFriendList(sock);
+                }
+                break;
+            case 80: 
+            case 115:
+                if(posforF!=friendNum-1)
+                {
+                    posforF++;
+                    RequestFriendList(sock);
+                }
+                break;
+            case 13:
+                quit=true;
+                break;
+            case 120:
+            {
+                chooseFriend=false;
+                if(Cflist.size()==0) return false;
+                char buf[BUF_SIZE]={0};
+                std::string msg=":Enter:OtM:"+nickName;
+                for(int index: Cflist)
+                {
+                    itoa(index,buf,10);
+                    msg.append(":");
+                    msg.append(buf);
+                    memset(buf,0,BUF_SIZE);
+                }
+                itoa(msg.size(),buf,10);
+                msg=buf+msg;
+                send(sock,msg.c_str(),msg.size(),0);
+                Cflist.clear();
+                return true;
+            }
+                break;
+            default:
+                continue;
+            }
+        }
+        if(Cflist.size()!=0) //중복선택 검사
+        {
+            for(int index : Cflist)
+            {
+                if(index==posforF) continue;
+            }
+        }
+        Cflist.push_back(posforF);
+    }
+    Cflist.clear();
+    chooseFriend=false;
+    return false;
 }

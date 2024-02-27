@@ -20,6 +20,8 @@ ChatRoom hChat;
 
 int main()
 {
+    //파일 송수신 서버 오픈하기 위한 자식 프로세스 생성
+    // fork();
     //우선은 서버 오픈
     ServerBase serv(PORT_NUM);
     serv.openServer();
@@ -85,11 +87,11 @@ unsigned WINAPI HandlingClient(void* arg)
             //귓속말 보내기
             hUser.sendWhisper(clntSock,split(bufString,':'));
         }
-        else if(msg=="Clist")
-        {
-            //닉네임이 포함된 모든 채팅방코드 리스트로 보내주자
-            hChat.ShowChatRoomList(clntSock,split(bufString,':')[2]);
-        }
+        // else if(msg=="Clist")
+        // {
+        //     //닉네임이 포함된 모든 채팅방코드 리스트로 보내주자
+        //     hChat.ShowChatRoomList(clntSock,split(bufString,':')[2]);
+        // }
         else if(msg=="Enter")
         {
             //채팅방 입장
@@ -105,14 +107,15 @@ unsigned WINAPI HandlingClient(void* arg)
             else if(split(bufString,':')[2]=="OtM") //멀티 채팅방
             {
             //수신 메시지)메시지총길이:Enter:OtO:내 닉네임:친구닉네임1:친구닉네임2...
-                //1:N 일때는 닉네임 전달받아서 방입장하게하자
+                //1:N 일때는 닉네임 전달받아서 방입장하게하자 --인덱스로 변경
                 for(int i=4;i<split(bufString,':').size();i++)
                 {
-                    mlist.push_back(split(bufString,':')[i]);
+                    // mlist.push_back(split(bufString,':')[i]);
+                    mlist.push_back(hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[i].c_str())));
                 }
             }
             hChat.EnterChatRoom(clntSock,mlist);
-            std::string notic=split(bufString,':')[3]+"님이 입장하셨습니다. \n";
+            std::string notic=split(bufString,':')[3]+"님이 입장하셨습니다. ";
             //그러면 이시점에서 채팅방의 다른 멤버들에게 나 입장한다는 메시지 보내줘야함
             hUser.SendNoticMSG(mlist,notic);
         }
@@ -138,7 +141,7 @@ unsigned WINAPI HandlingClient(void* arg)
             else if(sep=="Quit")
             {
                 //채팅방 퇴장
-                std::string notic=split(bufString,':')[4]+"님이 퇴장하셨습니다. \n:Q:"+split(bufString,':')[4];
+                std::string notic=split(bufString,':')[4]+"님이 퇴장하셨습니다. :Q:"+split(bufString,':')[4];
                 hUser.SendNoticMSG(hChat.BringMemList(split(bufString,':')[3]),notic);
                 //접속 상태 변경
                 hChat.QuitChatRoom(split(bufString,':')[3],split(bufString,':')[4]);

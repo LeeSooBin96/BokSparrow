@@ -16,6 +16,8 @@ class ClientHandle
 
     unsigned int friendNum=0; //친구 수 저장
     unsigned int posforF=0; //친구창 커서 위치
+    std::vector<int> Cflist; //채팅방 초대 친구 인덱스 리스트
+    bool chooseFriend=false; //채팅방 초대 멤버 선택 여부
 
 public:
     std::string nickName; //닉네임을 저장할 문자열
@@ -36,5 +38,7 @@ public:
     void PrintFoundFriend(std::vector<std::string>);
     //친구 연결 --posforF로 친구 인덱스 읽을 수 있음
     bool ConnectMyFriend(SOCKET&);
+    //채팅방 입장
+    bool EnterChatRoom(SOCKET&);
 };
 #endif

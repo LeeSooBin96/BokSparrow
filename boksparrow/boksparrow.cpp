@@ -123,12 +123,16 @@ unsigned WINAPI ReceiveMSG(void* arg)
             std::cout<<"==================================================\n";
             Sleep(1000);
         }
-        else if(msg=="clist")
-        {
-            //서버에서) 메시지총길이:clist:채팅방개수:채팅방이름:채팅방코드...
-            std::cout<<bufString<<std::endl;
-            //채팅방 목록 선택화면으로 가자~
-        }
+        // else if(msg=="clist")
+        // {
+        //     //서버에서) 메시지총길이:clist:채팅방개수:채팅방이름:채팅방코드...
+        //     //채팅방 목록 선택화면으로 가자~
+        //     //함수는 종료되었고 여기서 채팅방 입장 혹은 이전으로가기를 할텐데
+        //     //이전으로 가기를 하면 함수 다시 호출
+        //     //채팅방 입장 선택하면 이 스레드도 종료시키면 됨
+        //     //해보자
+        //     hChat.ChooseChatRoom(split(bufString,':'));
+        // }
         else if(msg=="enter")
         {
             //채팅방 입장) 메시지 총길이:enter:채팅코드:상대닉네임(1:1)
@@ -164,7 +168,7 @@ unsigned WINAPI InputChat(void* arg)
         std::getline(std::cin,chat);
         //입력한 메시지 채팅 서버로
         //서버로 보낼 메시지)메시지총길이:Chat:Send:채팅코드:닉네임:메시지
-        if(chat=="q"||chat=="Q") 
+        if(chat=="/Q"||chat=="/q") 
         {
             //서버한테 퇴장메시지 )메시지총길이:Chat:Quit:채팅코드:닉네임
             msg=":Chat:Quit:"+hChat.code+":"+hClient.nickName;
@@ -172,6 +176,15 @@ unsigned WINAPI InputChat(void* arg)
             msg=buffer+msg;
             send(clnt.sock,msg.c_str(),msg.size(),0);
             break;
+        }
+        else if(chat=="/P"||chat=="/p")
+        {
+            std::cout<<"대충 파일전송...\n";
+        }
+        else if(chat.substr(0,2)=="/D"||chat.substr(0,2)=="/d")
+        {
+            std::cout<<"대충 파일 다운로드...\n";
+            std::cout<<"번호는 "<<chat.substr(3,chat.size()-3)<<std::endl;
         }
         else if(!chat.empty())
         {

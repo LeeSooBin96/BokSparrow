@@ -86,6 +86,7 @@ void ChatHandle::PrintChatScreen(void)
     } 
     std::cout<<"==================================================\n";
     //채팅 입력창
+    std::cout<<"(나가기: /Q, 파일 전송: /P, 파일 다운로드: /D/번호) \n";
     std::cout<<">>";
 }
 //공지 수신
