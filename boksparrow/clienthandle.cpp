@@ -168,7 +168,13 @@ bool ClientHandle::ProcessFriendScreen(ClientBase& clnt)
             //채팅방 입장 --1:N 채팅방
             //서버에 채팅방 목록 정보 요청
             //보낼메시지) 메시지총길이:Clist:닉네임 --> 서버) 메시지총길이:clist:채팅방개수:채팅방이름:채팅코드...
-            
+            std::string msg=":Clist:"+nickName;
+            char buf[BUF_SIZE]={0};
+            itoa(msg.size(),buf,10);
+            msg=buf+msg;
+            send(clnt.sock,msg.c_str(),msg.size(),0);
+            //얘도 여기서 대기 시킬게 필요할듯
+            std::cin.get();
         }
         else if(posforF==friendNum+3)
         {

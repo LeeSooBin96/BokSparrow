@@ -1,5 +1,45 @@
 #include "chatroom.h"
 
+//채팅방 목록 조회
+void ChatRoom::ShowChatRoomList(SOCKET& sock,std::string nick)
+{
+    char buffer[BUF_SIZE]={0};
+    std::string msg=":clist:";
+    int count=0;
+    std::vector<std::string> codeList,titleList;
+    for(auto room: roomList)
+    {
+        for(auto mem: room.list)
+        {
+            if(mem.nick==nick)
+            {
+                count++; 
+                titleList.push_back(room.title);
+                codeList.push_back(room.code);
+                break;
+            }
+        }
+    }
+    if(count==0) //방하나도 없으면
+    { 
+        send(sock,"8:clist:0",10,0);
+        return;
+    }
+    itoa(count,buffer,10);
+    msg.append(buffer);
+    msg.append(":");
+    // for(auto c:codeList) msg.append(c+":");
+    for(int i=0;i<count;i++)
+    {
+        msg.append(titleList[i]+":"+codeList[i]+":");
+    }
+    msg.pop_back();
+    //여기까지 보낼 메시지 생성 완료
+    memset(buffer,0,BUF_SIZE);
+    itoa(msg.size(),buffer,10);
+    msg=buffer+msg;
+    send(sock,msg.c_str(),msg.size(),0);
+}
 //1:1채팅방 입장(코드전달할소켓,멤버리스트) --일단 여기부터 수정
 //1:N이어도 작동하게끔 지금 소켓이랑 채팅방 멤버 리스트 전달되고 있음!
 void ChatRoom::EnterChatRoom(SOCKET& sock,std::vector<std::string> mlist)
@@ -109,7 +149,7 @@ void ChatRoom::SendMemConnect(SOCKET& sock,std::string code,std::string nick)
             break;
         }
     }msg.pop_back();
-    char buffer[BUF_SIZE];
+    char buffer[BUF_SIZE]={0};
     itoa(msg.size(),buffer,10);
     msg=buffer+msg;
     send(sock,msg.c_str(),msg.size(),0);

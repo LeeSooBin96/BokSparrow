@@ -85,6 +85,11 @@ unsigned WINAPI HandlingClient(void* arg)
             //귓속말 보내기
             hUser.sendWhisper(clntSock,split(bufString,':'));
         }
+        else if(msg=="Clist")
+        {
+            //닉네임이 포함된 모든 채팅방코드 리스트로 보내주자
+            hChat.ShowChatRoomList(clntSock,split(bufString,':')[2]);
+        }
         else if(msg=="Enter")
         {
             //채팅방 입장

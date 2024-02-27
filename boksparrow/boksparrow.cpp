@@ -123,6 +123,11 @@ unsigned WINAPI ReceiveMSG(void* arg)
             std::cout<<"==================================================\n";
             Sleep(1000);
         }
+        else if(msg=="clist")
+        {
+            //서버에서) 메시지총길이:clist:채팅방개수:채팅방이름:채팅방코드...
+            std::cout<<bufString<<std::endl;
+        }
         else if(msg=="enter")
         {
             //채팅방 입장) 메시지 총길이:enter:채팅코드:상대닉네임(1:1)
