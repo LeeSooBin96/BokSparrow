@@ -4,7 +4,7 @@
 void ChatHandle::SettingChat(std::string nick,std::vector<std::string> slist)
 {
     //초기화할것
-    for(auto c: chat) c.clear();
+    for(auto& c: chat) c.clear();
     
     myNick=nick; //닉네임 저장
     code=slist[2]; //채팅 코드 저장
@@ -28,7 +28,7 @@ void ChatHandle::UpdateMemState(std::vector<std::string> slist)
 {
     for(int i=0;i<memList.size();i++)
     {
-        if(slist[2+i]=="T") memList[i].connect=true;
+        if(slist[3+i]=="T") memList[i].connect=true;
         else memList[i].connect=false;
     }
     PrintChatScreen(); //채팅창 출력
@@ -57,6 +57,7 @@ void ChatHandle::UpdateQuitMem(std::string nick)
             break;
         }
     }
+    PrintChatScreen();
 }
 //채팅창 출력
 void ChatHandle::PrintChatScreen(void)
@@ -86,7 +87,7 @@ void ChatHandle::PrintChatScreen(void)
     } 
     std::cout<<"==================================================\n";
     //채팅 입력창
-    std::cout<<"(나가기: /Q, 파일 전송: /P, 파일 다운로드: /D/번호) \n";
+    std::cout<<"(나가기: /Q, 파일 전송: /P, 파일 다운로드: /D/파일명) \n";
     std::cout<<">>";
 }
 //공지 수신

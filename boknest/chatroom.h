@@ -29,7 +29,7 @@ public:
     //채팅방 목록 조회
     void ShowChatRoomList(SOCKET&,std::string);
     //1:1채팅방 입장(코드전달할소켓,멤버리스트)
-    void EnterChatRoom(SOCKET&,std::vector<std::string>);
+    std::string EnterChatRoom(SOCKET&,std::vector<std::string>);
     //채팅방 멤버 상태정보 전송(소켓,채팅코드,내닉네임)
     void SendMemConnect(SOCKET&,std::string,std::string);
     //채팅방 멤버 리스트 반환(채팅 코드 전달받음)

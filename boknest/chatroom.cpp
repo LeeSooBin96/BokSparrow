@@ -42,7 +42,7 @@ void ChatRoom::ShowChatRoomList(SOCKET& sock,std::string nick)
 }
 //1:1채팅방 입장(코드전달할소켓,멤버리스트) --일단 여기부터 수정
 //1:N이어도 작동하게끔 지금 소켓이랑 채팅방 멤버 리스트 전달되고 있음!
-void ChatRoom::EnterChatRoom(SOCKET& sock,std::vector<std::string> mlist)
+std::string ChatRoom::EnterChatRoom(SOCKET& sock,std::vector<std::string> mlist)
 { //그럼 이 멤버리스트 반환하게 하면 채팅방 멤버 모두에게 접속 메시지도 날릴 수 있겠다!
     srand(time(NULL));
     //사용할 버퍼
@@ -124,12 +124,13 @@ void ChatRoom::EnterChatRoom(SOCKET& sock,std::vector<std::string> mlist)
     itoa(msg.size(),buffer,10);
     msg=buffer+msg;
     send(sock,msg.c_str(),msg.size(),0);
+    return code;
 }
 //채팅방 멤버 상태정보 전송
 void ChatRoom::SendMemConnect(SOCKET& sock,std::string code,std::string nick)
 {
     //여기서 내 상태정보 수정 -->채팅방 멤버들에게 접속했음을 알려야함
-    std::string msg=":connect:";
+    std::string msg=":"+code+":connect:";
     for(auto& room: roomList)
     {
         if(room.code==code)

@@ -7,6 +7,7 @@
 #include "chatroom.h"
 
 const char* PORT_NUM="91016";
+// const char* FTP_PORT_NUM="90320";
 const unsigned int BUF_SIZE=1024;
 //클라이언트 요청 처리
 unsigned WINAPI HandlingClient(void* arg); 
@@ -21,10 +22,21 @@ ChatRoom hChat;
 int main()
 {
     //파일 송수신 서버 오픈하기 위한 자식 프로세스 생성
-    // fork();
+    // fork(); //어디서 자식 프로세스를 생성해야할까~ 아 이거 리눅스에서만...아??
+    // CreateProcess( )//오 이건 사용해본적이 없는데;; 별도의 실행파일이 필요..와..
+    //그럼 그냥 소스파일 하나더 실행시키는거랑 뭐가 다르지.......................
+    //그럼 아예 애초에 방법 2가 안되겠네 
+    /*방법 1. 처음부터 자식프로세스 생성해서 FTP 서버 켜두기
+      방법 2. 파일 송수신 관련 요청이 들어오면 서버 켜서 처리하고 프로세스 소멸
+      방법 1은 자식 프로세스 하나면 되고 그 자식프로세스는 용량도 적겠지?
+      방법 2는 자식 프로세스가 요청 들어올때마다 켜질꺼고? 기존 소켓들 닫아줘야하고?
+               생성된 자식 프로세스 잘 소멸되고 있는지 좀비 프로세스 없는지 확인해야함
+      아무래도 1이 낫겠지...해보자*/
     //우선은 서버 오픈
     ServerBase serv(PORT_NUM);
+    // ServerBase FTPserv(FTP_PORT_NUM);
     serv.openServer();
+    // FTPserv.openServer();
     //클라이언트 요청 수락
     SOCKET clntSock;
     SOCKADDR_IN clntAdr;
@@ -114,10 +126,10 @@ unsigned WINAPI HandlingClient(void* arg)
                     mlist.push_back(hUser.BringMyFriend(split(bufString,':')[3],atoi(split(bufString,':')[i].c_str())));
                 }
             }
-            hChat.EnterChatRoom(clntSock,mlist);
+            std::string code = hChat.EnterChatRoom(clntSock,mlist);
             std::string notic=split(bufString,':')[3]+"님이 입장하셨습니다. ";
             //그러면 이시점에서 채팅방의 다른 멤버들에게 나 입장한다는 메시지 보내줘야함
-            hUser.SendNoticMSG(mlist,notic);
+            hUser.SendNoticMSG(code,mlist,notic);
         }
         else if(msg=="Chat")
         {
@@ -129,25 +141,29 @@ unsigned WINAPI HandlingClient(void* arg)
                 hChat.SendMemConnect(clntSock,split(bufString,':')[3],split(bufString,':')[4]);
                 //이때 채팅방 멤버들한테 접속했음을 알려야함...
                 //멤버들에게 접속한사람 닉네임을 알려주자 --성공
-                hUser.SendEnterMem(hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4]);
+                hUser.SendEnterMem(split(bufString,':')[3],hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4]);
             }
             else if(sep=="Send")
             {
                 //채팅 메시지 수신
                 //하려면 해당 채팅방 멤버 리스트를 가져와서
                 //멤버에 해당하는 소켓에 메시지 보내야함
-                hUser.SendChatMSG(hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4],split(bufString,':')[5]);
+                hUser.SendChatMSG(split(bufString,':')[3],hChat.BringMemList(split(bufString,':')[3]),split(bufString,':')[4],split(bufString,':')[5]);
             }
             else if(sep=="Quit")
             {
                 //채팅방 퇴장
                 std::string notic=split(bufString,':')[4]+"님이 퇴장하셨습니다. :Q:"+split(bufString,':')[4];
-                hUser.SendNoticMSG(hChat.BringMemList(split(bufString,':')[3]),notic);
+                hUser.SendNoticMSG(split(bufString,':')[3],hChat.BringMemList(split(bufString,':')[3]),notic);
                 //접속 상태 변경
                 hChat.QuitChatRoom(split(bufString,':')[3],split(bufString,':')[4]);
                 
                 //채팅 수신 스레드 종료 시켜야함
-                send(clntSock,"5:quit",6,0);
+                char buf[BUF_SIZE]={0};
+                std::string quitM=":"+split(bufString,':')[3]+":quit";
+                itoa(quitM.size(),buf,10);
+                quitM=buf+quitM;
+                send(clntSock,quitM.c_str(),quitM.size(),0);
             }
         }
 

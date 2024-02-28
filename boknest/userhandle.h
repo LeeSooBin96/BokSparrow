@@ -35,11 +35,11 @@ public:
     //친구 닉네임 가져오기
     std::string BringMyFriend(std::string,int);
     //채팅 멤버 상태 변경 전송(멤버리스트,상태변경한닉네임)
-    void SendEnterMem(std::vector<std::string>,std::string);
+    void SendEnterMem(std::string,std::vector<std::string>,std::string);
     //채팅 멤버에게 공지 메시지 보내기
-    void SendNoticMSG(std::vector<std::string>,std::string);
+    void SendNoticMSG(std::string,std::vector<std::string>,std::string);
     //채팅 메시지 보내기
-    void SendChatMSG(std::vector<std::string>,std::string,std::string);
+    void SendChatMSG(std::string,std::vector<std::string>,std::string,std::string);
 };
 
 #endif

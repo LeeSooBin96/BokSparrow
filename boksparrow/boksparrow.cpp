@@ -1,5 +1,6 @@
 //복스패로우 클라이언트
 #include <conio.h>
+#include <fstream>
 #include <process.h>
 #include <vector>
 #include <string>
@@ -10,6 +11,7 @@
 
 const char* SERVER_IP="127.0.0.1";
 const char* PORT_NUM="91016";
+const char* FTP_PORT_NUM="90320";
 const unsigned int BUF_SIZE=1024;
 
 //서버에 접속
@@ -27,6 +29,10 @@ unsigned WINAPI ReceiveMSG(void* arg);
 unsigned WINAPI InputChat(void* arg);
 //채팅 수신 스레드
 unsigned WINAPI OuputChat(void* arg);
+//파일 업로드 스레드
+unsigned WINAPI UploadFile(void* arg);
+//파일 다운로드 스레드
+unsigned WINAPI DownloadFile(void* arg);
 
 
 
@@ -151,6 +157,7 @@ unsigned WINAPI ReceiveMSG(void* arg)
 //채팅 송신 스레드 --메시지 입력 부분 (즉 채팅방 메인 진행부)
 unsigned WINAPI InputChat(void* arg)
 { //서버에 메시지 요청시 규약 : 메시지 총길이:Chat:요청메시지:채팅방코드:요청자닉네임
+    
     //사용할 버퍼
     char buffer[BUF_SIZE];
     std::string msg;
@@ -179,12 +186,37 @@ unsigned WINAPI InputChat(void* arg)
         }
         else if(chat=="/P"||chat=="/p")
         {
-            std::cout<<"대충 파일전송...\n";
+            std::string fPath, fName; //파일 경로, 파일 이름 저장
+            std::cout<<"==================================================\n";
+            std::cout<<"파일 경로를 입력하세요 >";
+            std::getline(std::cin,fPath);
+            std::cout<<"파일명을 입력하세요 >";
+            std::getline(std::cin,fName);
+            //채팅 서버에 파일명 업로드 사실 알리기 --채팅서버는 메시지만 띄울거니까 채팅 메시지 보내듯 하면 된다.
+            msg=":Chat:Send:"+hChat.code+":"+hClient.nickName+":"+fName+"를 업로드하였습니다.";
+            itoa(msg.size(),buffer,10);
+            msg=buffer+msg;
+            send(clnt.sock,msg.c_str(),msg.size(),0);
+            //그리고 스레드로 가서 ftp서버에 파일 전송해야함
+            std::string f[2]={fPath,fName};
+            HANDLE hUthread;
+            hUthread=(HANDLE)_beginthreadex(NULL,0,UploadFile,(void*)&f,0,NULL);
+            // std::cout<<"대충 파일전송...\n";
+            //서버에 파일 전송함을 알리고 응답 받으면 FTP클라이언트 켜기
+            //서버 자식 프로세스 생성이 윈도우는 안된다고 하니까... 여기서 바로 서버 접속
+            // ClientBase ftpClient(SERVER_IP,FTP_PORT_NUM); //ftp 서버 접속
+            //여기서 작동할 함수 필요하다 --파일 업로드는 채팅이랑 동시 동작해야하니 
+            //스레드 하나 연결해서 거기서 서버에 접속 파일 업로드 하게 하자
+            //파일 선택하고 전송하는 부분만 스레드로
         }
         else if(chat.substr(0,2)=="/D"||chat.substr(0,2)=="/d")
         {
-            std::cout<<"대충 파일 다운로드...\n";
-            std::cout<<"번호는 "<<chat.substr(3,chat.size()-3)<<std::endl;
+            //이름 받아오니까 그거 서버에 보내서 해당하는 파일 받도록
+            std::string fName=chat.substr(3,chat.size()-3);
+            //여기는 파일만 바로 받으면 되니까 바로 스레드로
+            HANDLE hDthread;
+            hDthread=(HANDLE)_beginthreadex(NULL,0,DownloadFile,(void*)&fName,0,NULL);
+            //서버에 파일 받음을 알리고 응답 받으면 FTP클라이언트 켜기
         }
         else if(!chat.empty())
         {
@@ -202,6 +234,7 @@ unsigned WINAPI InputChat(void* arg)
 //채팅 수신 스레드 --메시지 출력 부분
 unsigned WINAPI OuputChat(void* arg)
 {
+    /*서버 측에서도 채팅 코드 함께 보내줘야 내가 들어간 채팅방의 메시지만 받을 수 있다.*/
     //메시지 수신시 사용하는 것들
     char buffer[BUF_SIZE]={0};
     std::string bufString, nickname;
@@ -218,9 +251,15 @@ unsigned WINAPI OuputChat(void* arg)
             if(recv(clnt.sock,buffer,BUF_SIZE,0)<=0) return 0; //수신오류나면 스레드 종료
             bufString.append(buffer); recvLen=bufString.size();
         }
-        std::cout<<"전달된 메시지: "<<bufString<<std::endl; //임시
-        std::string msg=split(bufString,':')[1];
-        if(msg=="connect")
+        // std::cout<<"전달된 메시지: "<<bufString<<std::endl; //임시
+        std::string msg=split(bufString,':')[2];
+        if(split(bufString,':')[1]!=hChat.code)
+        {
+            //다른방 메시지 왔을때 화면 멈춰버림
+            hChat.PrintChatScreen();
+            // continue; //현재 있는 채팅방이 아니면
+        }
+        else if(msg=="connect")
         {
             //채팅방 멤버 접속상태 수신
             hChat.UpdateMemState(split(bufString,':'));
@@ -228,18 +267,18 @@ unsigned WINAPI OuputChat(void* arg)
         else if(msg=="enterM")
         {
             //들어온 멤버 닉네임 수신 -->상태 변경해야함
-            hChat.UpdateEnterMem(split(bufString,':')[2]);
+            hChat.UpdateEnterMem(split(bufString,':')[3]);
         }
         else if(msg=="notic")
         {
             //공지 메시지 수신 --여기서 퇴장일때 상태 변경 넣어야겠다~
-            if(split(bufString,':')[3]=="Q") hChat.UpdateQuitMem(split(bufString,':')[4]);
-            hChat.ReceiveNotic(split(bufString,':')[2]);
+            if(split(bufString,':')[4]=="Q") hChat.UpdateQuitMem(split(bufString,':')[5]);
+            hChat.ReceiveNotic(split(bufString,':')[3]);
         }
         else if(msg=="chat")
         {
             //채팅 메시지 수신
-            hChat.ReceiveChat(split(bufString,':')[2],split(bufString,':')[3]);
+            hChat.ReceiveChat(split(bufString,':')[3],split(bufString,':')[4]);
         }
         else if(msg=="quit") break; //수신 스레드 종료
 
@@ -248,4 +287,100 @@ unsigned WINAPI OuputChat(void* arg)
     }
     if(recvLen<0) hClient.ReceiveError();
     return 0;
+}
+//파일 업로드 스레드
+unsigned WINAPI UploadFile(void* arg)
+{
+    //파일경로 오나 확인해보자 --잘 전달됨
+    std::string fPath=*((std::string*)arg);
+    std::string fName=*((std::string*)arg+1);
+    // Sleep(1000); //스레드 작동 확인용 임시
+    //순서 한번 적어보자
+    //1. 파일 명, 파일 경로 입력 --여기 오기전 하자 --완료
+    //2. chat서버에 파일 업로드 사실 전송(파일명) --이것도 여기 오기전 --완료
+    //3. ftp서버에 파일 전송 --이것만 여기서
+    //일단 파일 오픈
+    std::ifstream rfile(fPath,std::ios::in|std::ios::binary); //읽기, 바이너리모드로
+    if(!rfile.is_open()) //파일 오픈 에러
+    {
+        std::cout<<"파일 오픈 에러! \n";
+        return 0;
+    }
+    //파일 전체 사이즈 알아야하고? --여기부터 차근차근
+    // int fSize; //파일 크기
+    rfile.seekg(0,std::ios::end);
+    int fSize=rfile.tellg();
+    rfile.seekg(0,std::ios::beg);
+    //파일 읽기
+    char* fptr=new char[fSize]; //배열 생성
+    rfile.read(fptr,fSize);
+    rfile.close();
+
+    ClientBase ftpClient(SERVER_IP,FTP_PORT_NUM); //ftp 서버 접속
+    //보낼 메시지) 메시지총길이:File:파일사이즈
+    std::string msg=":File:";
+    char buf[BUF_SIZE]={0};
+    itoa(fSize,buf,10); msg.append(buf);
+    memset(buf,0,BUF_SIZE);
+    itoa(msg.size(),buf,10);
+    msg=buf+msg;
+    send(ftpClient.sock,msg.c_str(),msg.size(),0); //파일 사이즈 전송
+
+    if(recv(ftpClient.sock,buf,BUF_SIZE,0)<0) return 0; //수신 오류나면 종료
+    // for(int i=0;i<fSize;i++) std::cout<<*(fptr+i);
+    send(ftpClient.sock,fptr,fSize,0); //파일 데이터 전송
+    recv(ftpClient.sock,buf,BUF_SIZE,0); 
+
+    msg=":"+fName+":"+split(fPath,'.')[split(fPath,'.').size()-1]; //파일 이름이랑 확장자 전송
+    memset(buf,0,BUF_SIZE);
+    itoa(msg.size(),buf,10);
+    msg=buf+msg;
+    send(ftpClient.sock,msg.c_str(),msg.size(),0);
+    // std::cout<<std::endl;
+    //전송 완료(완료메시지 수신)되면 스레드 종료
+    recv(ftpClient.sock,buf,BUF_SIZE,0); 
+    delete[] fptr;
+    std::cout<<fName<<"의 업로드가 완료되었습니다. \n";
+}
+//파일 다운로드 스레드
+unsigned WINAPI DownloadFile(void* arg)
+{
+    //순서
+    //1. 다운할 파일명 입력
+    std::string fName=*((std::string*)arg);
+    Sleep(1000); //스레드 작동 확인용 임시
+    std::cout<<fName<<std::endl;
+    //2. 다운로드 폴더 생성 --없으면 자동으로 되려나--안되네 --아 몰라.. 라이브러리 지원 안되니까 힘들어..
+    // const wchar_t* dir=new const wchar_t("./downloads");
+    // if(_waccess(dir,0)<0)
+    //     CreateDirectory(dir,NULL);
+    //3. ftp서버 연결
+    ClientBase ftpClient(SERVER_IP,FTP_PORT_NUM); //ftp 서버 접속
+    //4. 파일명 송신
+    char buffer[BUF_SIZE]={0};
+    std::string msg=":Download:"+fName;
+    itoa(msg.size(),buffer,10);
+    msg=buffer+msg;
+    send(ftpClient.sock,msg.c_str(),msg.size(),0); //파일 요청
+    //5. 데이터 수신
+    memset(buffer,0,BUF_SIZE);
+    recv(ftpClient.sock,buffer,BUF_SIZE,0); //파일 크기 수신
+    int size=atoi(buffer);
+    send(ftpClient.sock,"y",2,0); //확인메시지
+
+    //6. 파일 생성 및 데이터 담기
+    char* fptr=new char[size];
+    recv(ftpClient.sock,fptr,size,0); //파일 데이터 전송
+    send(ftpClient.sock,"y",2,0);
+    
+    memset(buffer,0,BUF_SIZE);
+    recv(ftpClient.sock,buffer,BUF_SIZE,0); //파일 확장자
+    send(ftpClient.sock,"y",2,0);
+    std::string ext=buffer;
+
+    std::ofstream wfile("./downloads/"+fName+"."+ext,std::ios::out|std::ios::binary);
+    wfile.write(fptr,size);
+    wfile.close();
+    std::cout<<fName<<"의 다운로드가 완료되었습니다. \n";
+    delete[] fptr;
 }

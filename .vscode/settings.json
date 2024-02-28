@@ -56,6 +56,13 @@
         "vector": "cpp",
         "map": "cpp",
         "xtree": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "fstream": "cpp",
+        "algorithm": "cpp",
+        "chrono": "cpp",
+        "filesystem": "cpp",
+        "forward_list": "cpp",
+        "optional": "cpp",
+        "sstream": "cpp"
     }
 }
