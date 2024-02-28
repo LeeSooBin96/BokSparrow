@@ -42,6 +42,14 @@ int main()
     char buffer[BUF_SIZE]={0}; 
     std::string msg;
     //로그인 --닉네임 등록
+    system("cls");
+    std::ifstream rFile("./img/logo.txt");
+    rFile.seekg(0,std::ios::end);
+    int fSize=rFile.tellg();
+    rFile.seekg(0,std::ios::beg);
+    char* fptr=new char[fSize];
+    rFile.read(fptr,fSize);
+    std::cout<<fptr<<std::endl;
     while(!hClient.LoginProcess(clnt.sock)); 
     while(true) //여기를 묶자
     {
